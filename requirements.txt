@@ -1,0 +1,10 @@
+pyrealsense2
+tqdm
+albumentations
+opencv-python
+pillow
+numpy
+torch
+requests
+pyyaml
+ultralytics

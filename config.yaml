@@ -1,0 +1,168 @@
+# ============================================================================
+# Configuration file for the robot-vision-learning pipeline
+#
+# Run with:  python src/master_process.py --config config.yaml
+#
+# Notes:
+#   - Every path is relative to the root of the repository (the folder holding
+#     this file), no matter which directory you run the pipeline from. An
+#     absolute path is also accepted and is used as it is.
+#   - Model files (GroundingDINO config and weights, YOLO weights) are looked
+#     up inside src/models when only a filename is given.
+#   - Fields left empty (null / "") fall back to the default described in the
+#     comment above them. This keeps the chained folders of the pipeline
+#     (capture -> generate -> annotate -> augment) in sync without repeating
+#     the same path several times.
+# ============================================================================
+
+
+# ----------------------------------------------------------------------------
+# 1. Image capture
+# ----------------------------------------------------------------------------
+capture:
+  # "realsense" for an Intel RealSense camera, or an integer index for a USB
+  # camera (0 is usually the built-in/first webcam).
+  camera: 0
+  # Folder where the captured frames are written.
+  export_path: "dataset/cap_gen_augm_frames"
+  # Extension of the captured frames (jpg, png).
+  image_extension: "jpg"
+  # Set to false to skip the capture step and reuse frames already present in
+  # export_path.
+  enabled: true
+
+
+# ----------------------------------------------------------------------------
+# 2. Leonardo.ai image generation
+# ----------------------------------------------------------------------------
+leonardo:
+  # API key. Leave empty to read it from the LEONARDO_API_KEY environment
+  api_key: ""
+  # Text prompt sent to Leonardo. Leave empty to be asked for it at runtime.
+  text_prompt: ""
+  # Folder with the reference images sent to the API.
+  # Empty -> capture.export_path
+  reference_images_path: ""
+  # Extension of the reference images. Empty -> capture.image_extension
+  reference_images_extension: ""
+  # Folder where the generated images are downloaded.
+  # Empty -> reference_images_path (generated images land next to the captures)
+  export_path: ""
+  # How many reference images are submitted to the API concurrently.
+  images_per_batch: 5
+  # Seconds to wait for the generation jobs to finish before fetching results.
+  wait_seconds: 45
+  # Payload sent to the /generations endpoint.
+  generation:
+    model_id: "1e60896f-3c26-4296-8ecc-53e2afecc132"
+    width: 912
+    height: 512
+    num_images: 4
+    alchemy: false
+    preset_style: "CINEMATIC"
+    # How strongly the reference image constrains the result, 0.0 - 1.0.
+    init_strength: 0.6
+  # Set to false to skip generation and annotate the captured frames only.
+  enabled: true
+
+
+# ----------------------------------------------------------------------------
+# 3. GroundingDINO zero-shot annotation
+# ----------------------------------------------------------------------------
+grounding_dino:
+  # GroundingDINO model config (.py) shipped with the GroundingDINO repo.
+  # A bare filename is looked up inside src/models.
+  config_path: "GroundingDINO_SwinT_OGC.py"
+  # GroundingDINO model weights (.pth), inside src/models.
+  weights_path: "groundingdino_swint_ogc.pth"
+  # Folder with the images to annotate. Empty -> leonardo.export_path
+  images_path: ""
+  # Extension of the images to annotate. Empty -> capture.image_extension
+  images_extension: ""
+  # Detection prompt, e.g. "metal bracket". It is also used as the new class
+  # name added to the dataset yaml. Leave empty to be asked for it at runtime.
+  text_prompt: ""
+  # Minimum confidence for a box to be kept, 0.0 - 1.0.
+  box_threshold: 0.35
+  # Minimum confidence for a prompt token to match a box, 0.0 - 1.0.
+  text_threshold: 0.25
+  # Folder where the YOLO-format .txt annotations are written.
+  annotations_export_path: "dataset/cap_gen_augm_labels"
+
+
+# ----------------------------------------------------------------------------
+# 4. Augmentation
+# ----------------------------------------------------------------------------
+augmentation:
+  # Images to augment. Empty -> grounding_dino.images_path
+  images_path: ""
+  # Annotations of those images. Empty -> grounding_dino.annotations_export_path
+  annotations_path: ""
+  # How many augmented copies are produced per input image.
+  multiplier_rate: 3
+  # Where the augmented images are written. Empty -> augmentation.images_path
+  export_images_path: ""
+  # Where the augmented labels are written. Empty -> augmentation.annotations_path
+  export_labels_path: ""
+  # Set to false to skip the augmentation step.
+  enabled: true
+
+
+# ----------------------------------------------------------------------------
+# 5. Dataset assembly and train/valid/test split
+# ----------------------------------------------------------------------------
+dataset:
+  # Folder collecting every image (captured + generated + augmented).
+  images_path: "dataset/all_images"
+  # Folder collecting every label.
+  labels_path: "dataset/all_labels"
+  # Extension of the images being split. Empty -> capture.image_extension
+  images_extension: ""
+  # Root in which the train/ valid/ test/ folders are created.
+  # Empty -> parent folder of dataset.images_path
+  output_folder: ""
+  # Split ratios. Must sum to 1.0.
+  split:
+    train: 0.7
+    valid: 0.2
+    test: 0.1
+  # Ultralytics dataset descriptor. A bare filename is resolved inside
+  # dataset.output_folder; a path with a separator is used as-is.
+  # The file must already exist - the pipeline appends the new class to it.
+  yaml_file: "data.yaml"
+
+
+# ----------------------------------------------------------------------------
+# 6. YOLO training
+# ----------------------------------------------------------------------------
+training:
+  # Starting weights (e.g. yolov8s.pt) or a previous run's best.pt.
+  # A bare filename is looked up inside src/models.
+  model_weights: "yolov8s.pt"
+  epochs: 10
+  # Image size the model is trained at, in pixels.
+  imgsz: 640
+  batch: 16
+  # "cpu", a GPU index (0), or a list of GPU indices ([0, 1]).
+  device: "cpu"
+  # Initial learning rate.
+  lr0: 0.001
+  # Final learning rate factor (final lr = lr0 * lrf).
+  lrf: 0.1
+  # Half precision (FP16). Requires a CUDA GPU.
+  half: false
+  # Save checkpoints and results of the run.
+  save: true
+  # Set to false to build the dataset but stop before training.
+  enabled: true
+
+
+# ----------------------------------------------------------------------------
+# 7. Pipeline behaviour
+# ----------------------------------------------------------------------------
+pipeline:
+  # Pause after the GroundingDINO step so the predicted boxes can be reviewed
+  # and corrected by hand before augmentation.
+  review_annotations: true
+  # Seconds the pipeline pauses between stages, so the console stays readable.
+  step_delay: 2
