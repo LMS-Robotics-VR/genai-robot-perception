@@ -1,7 +1,8 @@
-# robot-vision-learning
+# genai-robot-perception
 
 This is an official implementation of the paper "Aristeidou, C., Dimitropoulos, N., & Michalos, G. (2024). Generative AI and neural networks towards advanced robot cognition. *CIRP Annals, 73(1)*, 21-24."
 
+Official link for paper: https://doi.org/10.1016/j.cirp.2024.04.013
 
 <p align="center">
 <img src="assets/fig1.png" alt="drawing" width="500" />
