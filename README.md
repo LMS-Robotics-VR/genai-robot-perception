@@ -4,6 +4,22 @@ This is an official implementation of the paper "Aristeidou, C., Dimitropoulos, 
 
 Official link for paper: https://doi.org/10.1016/j.cirp.2024.04.013
 
+<br>
+
+### Acknowledgement
+
+<p align="center">
+<img src="assets/converging_eu.png" alt="drawing" width="500" />
+</p>
+
+This work has been supported by **“CONVERGING - Social industrial
+collaborative environments integrating AI, Big Data and Robotics for
+smart manufacturing”** project, funded by the European Commission
+Horizon Europe research and innovation programme under grant
+agreement No 101058521 (https://www.converging-project.eu/).
+
+<br>
+<br>
 <p align="center">
 <img src="assets/fig1.png" alt="drawing" width="500" />
 </p>
